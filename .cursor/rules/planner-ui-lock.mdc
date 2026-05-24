@@ -1,0 +1,38 @@
+---
+description: Lock planner UI layout, colors, and styling — no visual changes without explicit user request
+alwaysApply: true
+---
+
+# Planner UI Lock
+
+Do **not** change layout, colors, spacing, typography, or visual styling unless the user explicitly asks for a UI/visual change.
+
+## Canonical reference
+
+- **Design spec**: `src/components/RecipeCard.reference.tsx`
+- **Style tokens**: `src/lib/plannerUiStyles.ts`
+- **Live planner**: `src/components/PlannerView.tsx` (behavior/data only — keep visual parity with the reference)
+- **Shell & nav**: `src/components/AppShell.tsx`, `src/components/BottomNav.tsx`
+- **Theme colors**: `src/app/globals.css` (`emerald`, `cyan`, `violet`, `coral`)
+
+## Allowed without UI approval
+
+- Wiring real data, state, and business logic
+- Bug fixes that preserve the existing look
+- Adding features **below** the v0 bento cards without altering cards above
+
+## Forbidden without explicit user approval
+
+- Changing Tailwind classes on planner components
+- Moving, resizing, or reordering UI sections
+- New color accents outside the established palette rules
+- Replacing bento cards, day selector, profile toggles, or ingredient checklist styling
+
+## Color rules (must preserve)
+
+- **Macro numbers only**: emerald / cyan / violet / coral with glow (`macroColorClasses`)
+- **Ingredient weights**: zinc-100 / zinc-400 — never cyan or macro colors
+- **Profile toggles**: emerald and violet active backgrounds only
+- **Day selector active pill**: emerald on zinc-900 track
+- **Checkboxes**: emerald fill with zinc-950 check icon
+- **Bottom nav active tab**: emerald with drop-shadow glow
