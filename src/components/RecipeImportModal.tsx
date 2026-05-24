@@ -44,6 +44,7 @@ export function RecipeImportModal({ onClose }: RecipeImportModalProps) {
   const [text, setText] = useState("");
   const [photoHint, setPhotoHint] = useState("");
   const [photoName, setPhotoName] = useState<string | null>(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<Recipe | null>(null);
@@ -63,8 +64,8 @@ export function RecipeImportModal({ onClose }: RecipeImportModalProps) {
         content = text.trim();
         if (!content) throw new Error("Paste recipe text.");
       } else {
-        if (!photoName) throw new Error("Choose a cookbook photo first.");
-        content = photoName;
+        if (!photoDataUrl) throw new Error("Choose a cookbook photo first.");
+        content = photoDataUrl;
       }
 
       const result = await importRecipe({
@@ -89,7 +90,11 @@ export function RecipeImportModal({ onClose }: RecipeImportModalProps) {
       await importRecipe({
         source: tab,
         content:
-          tab === "url" ? url : tab === "text" ? text : photoName || "",
+          tab === "url"
+            ? url
+            : tab === "text"
+              ? text
+              : photoDataUrl || "",
         photoHint: tab === "photo" ? photoHint : undefined,
         recipeOverride: preview,
       });
@@ -164,8 +169,7 @@ export function RecipeImportModal({ onClose }: RecipeImportModalProps) {
                 className="w-full rounded-xl border border-slate-200 px-3 py-3 text-base outline-none ring-indigo-500 focus:ring-2"
               />
               <p className="mt-1 text-xs text-slate-400">
-                Try a URL containing &quot;steak&quot; or &quot;pasta&quot; for a
-                rich demo parse.
+                Paste a link and OpenAI will extract the recipe from the page.
               </p>
             </label>
           )}
@@ -202,8 +206,15 @@ export function RecipeImportModal({ onClose }: RecipeImportModalProps) {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  setPhotoName(file?.name ?? "cookbook-photo.jpg");
+                  if (!file) return;
+                  setPhotoName(file.name);
+                  setPhotoDataUrl(null);
                   setPreview(null);
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    setPhotoDataUrl(String(reader.result));
+                  };
+                  reader.readAsDataURL(file);
                 }}
               />
               <button

@@ -194,9 +194,32 @@ function matchUrlTemplate(url: string): Omit<Recipe, "id"> | null {
 }
 
 /**
- * Mock AI parser — structured recipe from URL, text, or photo (with optional hint).
+ * Parse a recipe via the server OpenAI route (falls back to local parser if needed).
  */
 export async function parseRecipeImport(
+  input: ParseRecipeImportInput
+): Promise<ParseRecipeImportResult> {
+  const response = await fetch("/api/ai/parse-recipe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json()) as { error?: string };
+    throw new Error(payload.error ?? "Could not parse recipe.");
+  }
+
+  const result = (await response.json()) as ParseRecipeImportResult;
+  return {
+    recipe: result.recipe,
+    confidence: result.confidence,
+    summary: result.summary,
+  };
+}
+
+/** @deprecated Used only as server fallback in /api/ai/parse-recipe */
+export async function parseRecipeImportLocal(
   input: ParseRecipeImportInput
 ): Promise<ParseRecipeImportResult> {
   await delay(input.source === "photo" ? 1600 : 900);

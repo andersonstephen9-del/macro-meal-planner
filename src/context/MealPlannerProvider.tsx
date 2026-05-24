@@ -10,8 +10,6 @@ import {
   type ReactNode,
 } from "react";
 import { isDayCompleted } from "@/lib/completedDays";
-import { generateWeeklyPlan } from "@/lib/generateWeeklyPlan";
-import { MOCK_RECIPES } from "@/lib/mockRecipes";
 import {
   parseRecipeImport,
   type ParseRecipeImportInput,
@@ -162,51 +160,47 @@ export function MealPlannerProvider({ children }: { children: ReactNode }) {
   const runGenerateWeeklyPlan = useCallback(async () => {
     setIsGenerating(true);
     try {
-      let specialScores: Record<string, number> = {};
-      try {
-        const recipePool = [
-          ...MOCK_RECIPES,
-          ...state.recipeVault.filter(
-            (recipe) => !MOCK_RECIPES.some((mock) => mock.id === recipe.id)
+      const response = await fetch("/api/ai/generate-week", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profiles: state.profiles.filter((p) =>
+            state.selectedPortionProfileIds.includes(p.id)
           ),
-        ];
-        const response = await fetch("/api/grocery-specials", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recipes: recipePool }),
-        });
-        if (response.ok) {
-          const payload = (await response.json()) as {
-            specials?: Record<string, number>;
-          };
-          specialScores = payload.specials ?? {};
-        }
-      } catch {
-        // Fall back to overlap-only planning if specials are unavailable.
+          recipeVault: state.recipeVault,
+          preferenceLedger: state.preferenceLedger,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "Could not generate weekly plan.");
       }
 
-      setState((s) => {
-        const profiles = s.profiles.filter((p) =>
-          s.selectedPortionProfileIds.includes(p.id)
-        );
-        const result = generateWeeklyPlan(
-          s.recipeVault,
-          s.preferenceLedger,
-          profiles,
-          specialScores
-        );
-        return {
-          ...s,
-          weeklyPlan: result.weeklyPlan,
-          recipeVault: result.recipeVault,
-          completedDays: emptyCompletedDays(),
-          checkedShoppingItems: [],
-        };
-      });
+      const result = (await response.json()) as {
+        weeklyPlan: AppState["weeklyPlan"];
+        recipeVault: Recipe[];
+      };
+
+      setState((s) => ({
+        ...s,
+        weeklyPlan: result.weeklyPlan,
+        recipeVault: result.recipeVault,
+        completedDays: emptyCompletedDays(),
+        checkedShoppingItems: [],
+      }));
+    } catch (error) {
+      console.error(error);
+      setLastRebalanceMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not generate weekly plan."
+      );
+      setTimeout(() => setLastRebalanceMessage(null), 4000);
     } finally {
       setIsGenerating(false);
     }
-  }, [state.recipeVault]);
+  }, [state.profiles, state.selectedPortionProfileIds, state.recipeVault, state.preferenceLedger]);
 
   const cacheRecipeImage = useCallback((recipeId: string, imageUrl: string) => {
     setState((s) => ({
