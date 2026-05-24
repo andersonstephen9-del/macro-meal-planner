@@ -10,8 +10,6 @@ export interface ColesProduct {
 
 const DEFAULT_DATA_PATH = path.join(
   process.cwd(),
-  "..",
-  "grocery-scraper",
   "data",
   "cleanProductInfo.json"
 );
